@@ -1,0 +1,12 @@
+holodeck:
+  target: dev
+  outputs:
+    dev:
+      type: postgres
+      host: postgres
+      port: 5432
+      user: user
+      password: pass
+      dbname: mydb
+      schema: staging
+      threads: 4

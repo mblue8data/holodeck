@@ -1,0 +1,194 @@
+
+services:
+  postgres:
+    build: ./docker/postgres
+    env_file: .env
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql
+      - ./init/postgres:/docker-entrypoint-initdb.d
+
+  dbt-postgres:
+    build: ./docker/dbt-postgres
+    environment:
+      DBT_PROFILES_DIR: /dbt
+    volumes:
+      - ./data_modeling/dbt:/dbt
+    working_dir: /dbt
+    depends_on:
+      - postgres
+    command: ["dbt", "run"]
+
+  mysql:
+    build: ./docker/mysql
+    env_file: .env
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
+      MYSQL_DATABASE: ${MYSQL_DATABASE}
+    ports:
+      - "3306:3306"
+
+  redis:
+    build: ./docker/redis
+    ports:
+      - "6379:6379"
+
+  mongo:
+    build: ./docker/mongo
+    ports:
+      - "27017:27017"
+
+  mage:
+    build: ./docker/mage
+    ports:
+      - "6789:6789"
+    volumes:
+      - ./mage_data:/home/src
+
+  mlflow:
+    build: ./docker/mlflow
+    ports:
+      - "5000:5000"
+    volumes:
+      - ./mlruns:/mlflow/mlruns
+    command:
+      - mlflow
+      - server
+      - --backend-store-uri
+      - /mlflow/mlruns
+      - --default-artifact-root
+      - /mlflow/mlruns
+      - --host
+      - 0.0.0.0
+
+  grafana:
+    build: ./docker/grafana
+    container_name: grafana
+    env_file: .env
+    ports:
+      - "3000:3000"
+    environment:
+      GF_SECURITY_ADMIN_USER: ${GF_SECURITY_ADMIN_USER}
+      GF_SECURITY_ADMIN_PASSWORD: ${GF_SECURITY_ADMIN_PASSWORD}
+      GF_AUTH_ANONYMOUS_ENABLED: "true"
+      GF_AUTH_ANONYMOUS_ORG_ROLE: Viewer
+    volumes:
+      - ./grafana/provisioning:/etc/grafana/provisioning
+      - grafana_data:/var/lib/grafana
+    depends_on:
+      - postgres
+
+  dagster:
+    build: ./docker/dagster
+    container_name: dagster
+    ports:
+      - "3010:3000"
+    volumes:
+      - ./dagster:/opt/dagster/app
+    environment:
+      DAGSTER_HOME: /opt/dagster/app
+
+  localstack:
+    build: ./docker/localstack
+    container_name: localstack
+    ports:
+      - "4566:4566"
+    environment:
+      SERVICES: s3,iam,sts
+      DEBUG: 0
+      PERSISTENCE: 1
+    volumes:
+      - localstack_data:/var/lib/localstack
+
+  terraform:
+    build: ./docker/terraform
+    container_name: terraform
+    working_dir: /workspace
+    env_file: .env
+    volumes:
+      - ./devops/terraform:/workspace
+    environment:
+      AWS_ACCESS_KEY_ID: ${AWS_ACCESS_KEY_ID}
+      AWS_SECRET_ACCESS_KEY: ${AWS_SECRET_ACCESS_KEY}
+      AWS_DEFAULT_REGION: ${AWS_DEFAULT_REGION}
+    depends_on:
+      - localstack
+
+  atlas:
+    build: ./docker/atlas
+    container_name: atlas
+    working_dir: /migrations
+    volumes:
+      - ./devops/atlas:/migrations
+    depends_on:
+      - postgres
+
+  minio:
+    build: ./docker/minio
+    container_name: minio
+    env_file: .env
+    environment:
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD}
+    ports:
+      - "9001:9000"
+      - "9002:9001"
+    volumes:
+      - minio_data:/data
+    command: server /data --console-address ":9001"
+
+  duckdb-lake:
+    build: ./docker/duckdb-lake
+    container_name: duckdb-lake
+    working_dir: /workspace
+    env_file: .env
+    environment:
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD}
+    volumes:
+      - ./data:/workspace/data
+      - ./datalake:/workspace/lake
+    depends_on:
+      - minio
+
+  duckdb:
+    build: ./docker/duckdb
+    container_name: duckdb
+    working_dir: /data
+    volumes:
+      - ./data:/data
+
+  ducklake:
+    build: ./docker/ducklake
+    container_name: ducklake
+    working_dir: /data
+    volumes:
+      - ./data:/data:ro
+    command: ["python", "-m", "http.server", "9000"]
+    ports:
+      - "9000:9000"
+
+  marimo:
+    build: ./docker/marimo
+    container_name: marimo
+    working_dir: /workspace
+    volumes:
+      - ./marimo_notebooks:/workspace/notebooks
+      - ./data:/workspace/data
+    command: >
+      bash -lc "pip install -q marimo==0.18.4 duckdb==1.0.0 pandas==2.2.3 && echo 'Marimo available at http://localhost:8888' && marimo edit /workspace/notebooks --host 0.0.0.0 --port 8888 --no-token"
+    ports:
+      - "8888:8888"
+    depends_on:
+      - ducklake
+
+volumes:
+  postgres_data:
+  grafana_data:
+  localstack_data:
+  minio_data:

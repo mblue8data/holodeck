@@ -1,0 +1,26 @@
+# Secrets
+.env
+.env.*
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+holo_env/
+
+# Runtime artifacts
+data/
+mlruns/
+marimo_notebooks/
+dagster/history/
+dagster/schedules/
+mage_data/
+
+# Terraform state
+devops/terraform/.terraform/
+devops/terraform/*.tfstate
+devops/terraform/*.tfstate.backup
+devops/terraform/.terraform.lock.hcl
+
+# macOS
+.DS_Store

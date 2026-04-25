@@ -1,0 +1,6 @@
+import subprocess
+
+def print_lolcat_banner():
+    subprocess.run("cat banner.txt | lolcat", shell=True)
+
+print_lolcat_banner()

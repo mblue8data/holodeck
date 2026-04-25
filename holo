@@ -1,0 +1,402 @@
+#!/usr/bin/env python3
+
+import argparse
+from argparse import ArgumentParser
+import subprocess
+import sys
+import os
+import json
+import shutil
+import time
+from pathlib import Path
+
+
+def _ensure_local_venv_site_packages():
+    holo_root = Path(__file__).resolve().parent
+    venv_root = holo_root / "holo_env"
+    if not venv_root.exists():
+        return
+
+    lib_root = venv_root / "lib"
+    if not lib_root.exists():
+        return
+
+    for site_packages in lib_root.glob("python*/site-packages"):
+        sys.path.insert(0, str(site_packages))
+        break
+
+
+_ensure_local_venv_site_packages()
+
+from rich.console import Console
+
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
+from tools.ascii import ascii_maker
+
+console = Console()
+
+
+SEQUENCES = {
+    "warehouse_stack": ["postgres", "dagster", "grafana"],
+    "data_modeling":   ["postgres", "dbt-postgres"],
+    "dbt_test":        ["postgres", "grafana"],
+    "full_stack":      ["postgres", "dagster", "grafana", "mage"],
+    "basic_ml_stack":  ["mlflow", "dagster"],
+    "duckdb_lab":      ["ducklake", "duckdb", "marimo"],
+    "devops_stack":    ["postgres", "localstack", "terraform", "atlas"],
+    "datalake_stack":  ["minio", "duckdb-lake", "marimo"],
+}
+
+
+# Banner stuff 
+
+def print_main_banner(sequence_name=None):
+    banner_path = Path(__file__).resolve().parent / "tools" / "ascii" / "main_banner.txt"
+    if not banner_path.exists():
+        print("[!] Could not find main_banner.txt")
+        return
+
+    banner = banner_path.read_text()
+    # Optional lolcat for rainbow output, fallback to Rich if missing.
+    if shutil.which("lolcat"):
+        subprocess.run(["lolcat"], input=banner.encode())
+    else:
+        console.print(banner, style="bold cyan")
+
+    if sequence_name:
+        print(f' "Computer, load the \'{sequence_name}\' sequence."')
+    else:
+        print()
+
+
+def print_ascii_sequence_banner(sequence_name):
+    # Use a fuller font for better readability than the compact "mini" style.
+    ascii_maker.generate_ascii(sequence_name.lower(), font="standard", use_lolcat=True)
+
+
+def start_docker():
+    """Best-effort start for Docker Desktop/Colima."""
+    if sys.platform == "darwin":
+        docker_app = Path("/Applications/Docker.app")
+        if docker_app.exists():
+            subprocess.Popen(["open", str(docker_app)])
+        else:
+            subprocess.Popen(["open", "-a", "Docker"])
+    else:
+        # Common local runners; adjust as needed per workstation
+        if shutil.which("colima"):
+            subprocess.Popen(["colima", "start"])
+        elif shutil.which("systemctl"):
+            subprocess.Popen(["systemctl", "--user", "start", "docker"])
+
+
+def ensure_docker_ready():
+    """Ensure docker daemon is reachable; offer to start it if not."""
+    if shutil.which("docker") is None:
+        console.print("[red]Docker CLI not found. Install Docker Desktop or docker-cli.[/red]")
+        return False
+
+    try:
+        subprocess.run(["docker", "ps"], check=True, capture_output=True)
+        return True
+    except subprocess.CalledProcessError:
+        console.print("[yellow]Cannot connect to Docker daemon.[/yellow]")
+
+    if not sys.stdin.isatty():
+        console.print("[yellow]Non-interactive shell; attempting to start Docker...[/yellow]")
+        start_docker()
+        for _ in range(15):
+            time.sleep(2)
+            try:
+                subprocess.run(["docker", "ps"], check=True, capture_output=True)
+                console.print("[green]Docker is up.[/green]")
+                return True
+            except subprocess.CalledProcessError:
+                continue
+        console.print("[red]Docker did not start in time. Please launch it manually.[/red]")
+        return False
+
+    reply = input("Start Docker now? [y/N]: ").strip().lower()
+    if reply in ("y", "yes"):
+        console.print("Starting Docker... this may take a moment.")
+        start_docker()
+        for _ in range(15):
+            time.sleep(2)
+            try:
+                subprocess.run(["docker", "ps"], check=True, capture_output=True)
+                console.print("[green]Docker is up.[/green]")
+                return True
+            except subprocess.CalledProcessError:
+                continue
+        console.print("[red]Docker did not start in time. Please launch it manually.[/red]")
+    return False
+
+
+# Docker services and helpers
+def get_compose_cmd():
+    """Return docker compose command list or None if not available."""
+    if shutil.which("docker-compose"):
+        return ["docker-compose"]
+
+    if shutil.which("docker"):
+        result = subprocess.run(
+            ["docker", "compose", "version"],
+            capture_output=True,
+            text=True,
+        )
+        if result.returncode == 0:
+            return ["docker", "compose"]
+
+    console.print(
+        "[red]Docker Compose not found.[/red] Install Docker Desktop or the "
+        "docker-compose plugin/formula."
+    )
+    return None
+
+def seed_duckdb_lab_data():
+    """Ensure duckdb_lab has seed data; generate via bluefaker if missing."""
+    repo_root = Path(__file__).resolve().parent.parent
+    raw_dir = repo_root / "data" / "raw"
+    raw_dir.mkdir(parents=True, exist_ok=True)
+
+    existing = list(raw_dir.glob("*.parquet"))
+    if existing:
+        console.print(f"[green]DuckDB lab data present[/green] ({len(existing)} parquet file(s)).")
+        return
+
+    schema = repo_root / "tools" / "bluefaker_factory" / "schemas" / "fraud_schema.yaml"
+    generator = repo_root / "tools" / "bluefaker_factory" / "bluefaker.py"
+    output_base = raw_dir / "fraud_data01"
+
+    cmd = [
+        sys.executable or "python3",
+        str(generator),
+        "--schema",
+        str(schema),
+        "--records",
+        "100000",
+        "--format",
+        "parquet",
+        "--file",
+        str(output_base),
+    ]
+
+    console.print("[cyan]No parquet files in data/raw; generating sample fraud dataset via bluefaker...[/cyan]")
+    try:
+        subprocess.run(cmd, check=True)
+        console.print(f"[green]Generated[/green] {output_base}.parquet using {schema.name}.")
+    except Exception as exc:
+        console.print(f"[red]Data seed failed:[/red] {exc}")
+        console.print("Run manually (after installing bluefaker deps):")
+        console.print("  python tools/bluefaker_factory/bluefaker.py --schema tools/bluefaker_factory/schemas/fraud_schema.yaml --records 100000 --format parquet --file data/raw/fraud_data01")
+
+def dry_run(sequence):
+    print_ascii_sequence_banner(sequence)
+    print(f"Dry Run: Would start containers: {' '.join(SEQUENCES[sequence])}")
+
+def reset_sequence(sequence):
+    print_ascii_sequence_banner(sequence)
+
+    print(f"Resetting sequence: {sequence}")
+    if ensure_docker_ready():
+        compose_cmd = get_compose_cmd()
+        if not compose_cmd:
+            return
+        subprocess.run(compose_cmd + ["rm", "-sfv"] + SEQUENCES[sequence])
+
+def stop_sequence(sequence):
+    print_ascii_sequence_banner(sequence)
+
+    print(f"\n 🛑 Stopping sequence: {sequence}")
+    if ensure_docker_ready():
+        compose_cmd = get_compose_cmd()
+        if not compose_cmd:
+            return
+        subprocess.run(compose_cmd + ["stop"] + SEQUENCES[sequence])
+
+
+def status(sequence):
+    print_ascii_sequence_banner(sequence)
+    print(f"Status for sequence: {sequence}")
+
+    if ensure_docker_ready():
+        # Get running containers info
+        ps_output = subprocess.check_output([
+            "docker", "ps", "--format", "{{json .}}"
+        ]).decode().splitlines()
+
+        containers = [json.loads(line) for line in ps_output]
+
+        for svc in SEQUENCES[sequence]:
+            matched = [c for c in containers if svc in c["Names"]]
+
+            if matched:
+                c = matched[0]
+                status_icon = "🟢 Running"
+                ports = c.get("Ports", "")
+            else:
+                status_icon = "🔴 Not running"
+                ports = ""
+
+            print(f"  {svc.ljust(15)} {status_icon.ljust(15)} {ports}")
+
+def status_all():
+    console.print("[bold cyan]Holodeck System Status (all containers):[/bold cyan]\n")
+
+    try:
+        if not ensure_docker_ready():
+            return
+
+        ps_output = subprocess.check_output([
+            "docker", "ps", "--format", "{{json .}}"
+        ]).decode().splitlines()
+
+        if not ps_output:
+            console.print("No running containers found.")
+            return
+
+        containers = [json.loads(line) for line in ps_output]
+
+        for c in containers:
+            name = c["Names"]
+            image = c["Image"]
+            status = c["Status"]
+            ports = c.get("Ports", "")
+            print(f" {name.ljust(20)} {status.ljust(30)} {ports}")
+    except subprocess.CalledProcessError as e:
+        console.print(f"[red]Error retrieving docker status: {e}[/red]")
+
+
+def test_sequence(sequence):
+    print_ascii_sequence_banner(sequence)
+
+    print(f"Running tests for: {sequence}")
+    if not ensure_docker_ready():
+        return
+
+    if "grafana" in SEQUENCES[sequence]:
+        try:
+            r = subprocess.check_output(["curl", "-s", "http://localhost:3000/api/health"])
+            print(f"  Grafana: {r.strip().decode()}")
+        except:
+            print("  Grafana not responding")
+
+    if any("dbt" in s for s in SEQUENCES[sequence]):
+        print("  DBT: Checking compilation")
+        compose_cmd = get_compose_cmd()
+        if not compose_cmd:
+            return
+        subprocess.run(compose_cmd + ["run", "--rm", "dbt-postgres", "dbt", "compile"])
+
+    if "dagster" in SEQUENCES[sequence]:
+        print("  Dagster: Checking workspace")
+        subprocess.run(["curl", "-s", "http://localhost:3010/graphql?query={__typename}"])
+
+
+def run_docker_services(services):
+    try:
+        if not ensure_docker_ready():
+            sys.exit(1)
+
+        compose_cmd = get_compose_cmd()
+        if not compose_cmd:
+            sys.exit(1)
+
+        cmd = compose_cmd + ["up", "-d"] + services
+        console.print(f"[green]▶ Running:[/green] {' '.join(cmd)}")
+
+        result = subprocess.run(cmd, check=True, capture_output=True, text=True)
+
+        console.print("[bold green] Containers running[/bold green]")
+        console.print(f"[dim]Docker Output:[/dim]\n{result.stdout}")
+    except subprocess.CalledProcessError as e:
+        console.print(f"[red bold] Docker error: {e}[/red bold]")
+        if e.stdout:
+            console.print(f"[yellow]stdout:[/yellow]\n{e.stdout}")
+        if e.stderr:
+            console.print(f"[red]stderr:[/red]\n{e.stderr}")
+        sys.exit(1)
+
+# Sequence Loading
+
+def load_sequence(sequence_name):
+    if sequence_name not in SEQUENCES:
+        console.print(f"[red]! Unknown sequence: {sequence_name}[/red]")
+        return
+
+    if sequence_name == "duckdb_lab":
+        seed_duckdb_lab_data()
+
+    print_ascii_sequence_banner(sequence_name)
+    run_docker_services(SEQUENCES[sequence_name])
+
+def list_sequences():
+    print("Available sequences:")
+    for name, services in SEQUENCES.items():
+        print(f"  {name}: {' '.join(services)}")
+
+class HolodeckParser(ArgumentParser):
+    def error(self, message):
+        console.print(f"[red bold] CLI Error:[/red bold] {message}")
+        console.print(" Tip: Use [green bold]--list[/green bold] to see available sequences.")
+        self.print_help()
+        sys.exit(2)
+
+if __name__ == "__main__":
+
+    parser = HolodeckParser(description="Holodeck CLI: Data Engineering Simulator")
+    parser.add_argument("--load", help="Start a sequence")
+    parser.add_argument("--dry-run", help="Preview what would be launched")
+    parser.add_argument("--reset", help="Stop and remove containers + volumes")
+    parser.add_argument("--stop", help="Stop (but do not reset) a sequence")
+    parser.add_argument("--status", nargs="?", help="Show running container status")
+    parser.add_argument("--test", help="Run smoke tests for a sequence")
+    parser.add_argument("--list", action="store_true", help="List available sequences")
+
+    args = parser.parse_args()
+    
+    # Detect sequence name for banner subtitle if --load is used
+    
+    seq_name = args.load if args.load else None
+    
+    # Print banner once, optionally with sequence name
+    print_main_banner(sequence_name=seq_name)
+
+    if args.list:
+        list_sequences()
+        sys.exit(0)
+    elif args.dry_run:
+        dry_run(args.dry_run)
+        sys.exit(0)
+    elif args.reset:
+        reset_sequence(args.reset)
+        sys.exit(0)
+    elif args.stop:
+        stop_sequence(args.stop)
+        sys.exit(0)
+
+    if args.test:
+        test_sequence(args.test)
+
+    if args.load:
+        load_sequence(args.load)
+        if args.load == "duckdb_lab":
+            console.print("[cyan]Marimo UI:[/cyan] http://localhost:8888  |  [cyan]Ducklake data server:[/cyan] http://localhost:9000")
+        if "grafana" in SEQUENCES.get(args.load, []):
+            console.print("[cyan]Grafana:[/cyan] http://localhost:3000  (admin / holodeck)")
+        if "minio" in SEQUENCES.get(args.load, []):
+            console.print("[cyan]MinIO Console:[/cyan] http://localhost:9002  (see .env for credentials)")
+            console.print("[cyan]MinIO S3 API:[/cyan]  http://localhost:9001")
+            console.print("[dim]First run: open the console and create buckets: bronze, silver, gold[/dim]")
+
+    elif args.status in SEQUENCES:
+        status(args.status)
+        sys.exit(0)
+
+    elif args.status is None:
+        status_all()
+        sys.exit(0)
+
+    else:
+        console.print(f"[yellow] Unknown sequence: {args.status}[/yellow]")
+        console.print(" Try [bold green]--list[/bold green] to see available sequences.")
