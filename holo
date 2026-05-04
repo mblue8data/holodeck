@@ -29,6 +29,8 @@ def _ensure_local_venv_site_packages():
 _ensure_local_venv_site_packages()
 
 from rich.console import Console
+from rich.table import Table
+from rich import box
 
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 from tools.ascii import ascii_maker
@@ -331,9 +333,21 @@ def load_sequence(sequence_name):
     run_docker_services(SEQUENCES[sequence_name])
 
 def list_sequences():
-    print("Available sequences:")
+    table = Table(
+        title="[bold cyan]Available Sequences[/bold cyan]",
+        box=box.ROUNDED,
+        show_lines=True,
+        header_style="bold magenta",
+    )
+    table.add_column("Sequence", style="bold green", no_wrap=True)
+    table.add_column("Services", style="cyan")
+
     for name, services in SEQUENCES.items():
-        print(f"  {name}: {' '.join(services)}")
+        table.add_row(name, "  ".join(f"[dim]▸[/dim] {s}" for s in services))
+
+    console.print()
+    console.print(table)
+    console.print()
 
 class HolodeckParser(ArgumentParser):
     def error(self, message):
