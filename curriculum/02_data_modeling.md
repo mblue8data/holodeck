@@ -277,4 +277,4 @@ Before moving on, you should be able to:
 
 ## Next Steps
 - **`dbt_test`** — validate dbt output visually in Grafana
-- **`devops_stack`** — manage the underlying schema changes with Atlas
+- **`dataops_stack`** — manage the underlying schema changes with Atlas

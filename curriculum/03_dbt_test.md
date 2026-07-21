@@ -63,7 +63,7 @@ If you see values outside `completed`, `pending`, `failed` your dbt `accepted_va
 
 ## Module 2 — Data Quality Dashboard in Grafana
 
-Open Grafana at **http://localhost:3000**
+Open Grafana at **http://localhost:3001**
 
 Create a new dashboard called **dbt Data Quality**.
 
@@ -165,4 +165,4 @@ Before moving on, you should be able to:
 
 ## Next Steps
 - **`warehouse_stack`** — add more complex models and validate them here
-- **`devops_stack`** — govern schema changes that would break these models
+- **`dataops_stack`** — govern schema changes that would break these models

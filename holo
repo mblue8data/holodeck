@@ -45,7 +45,7 @@ SEQUENCES = {
     "full_stack":      ["postgres", "dagster", "grafana", "mage"],
     "basic_ml_stack":  ["mlflow", "dagster"],
     "duckdb_lab":      ["ducklake", "duckdb", "marimo"],
-    "devops_stack":    ["postgres", "localstack", "terraform", "atlas", "grafana"],
+    "dataops_stack":   ["postgres", "localstack", "terraform", "atlas", "grafana"],
     "datalake_stack":  ["minio", "duckdb-lake", "marimo"],
 }
 
@@ -285,7 +285,7 @@ def test_sequence(sequence):
 
     if "grafana" in SEQUENCES[sequence]:
         try:
-            r = subprocess.check_output(["curl", "-s", "http://localhost:3000/api/health"])
+            r = subprocess.check_output(["curl", "-s", "http://localhost:3001/api/health"])
             print(f"  Grafana: {r.strip().decode()}")
         except:
             print("  Grafana not responding")
@@ -436,7 +436,7 @@ if __name__ == "__main__":
         if args.load == "duckdb_lab":
             console.print("[cyan]Marimo UI:[/cyan] http://localhost:8888  |  [cyan]Ducklake data server:[/cyan] http://localhost:9000")
         if "grafana" in SEQUENCES.get(args.load, []):
-            console.print("[cyan]Grafana:[/cyan] http://localhost:3000  (admin / holodeck)")
+            console.print("[cyan]Grafana:[/cyan] http://localhost:3001  (admin / holodeck)")
         if "minio" in SEQUENCES.get(args.load, []):
             console.print("[cyan]MinIO Console:[/cyan] http://localhost:9002  (see .env for credentials)")
             console.print("[cyan]MinIO S3 API:[/cyan]  http://localhost:9001")

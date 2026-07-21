@@ -5,7 +5,7 @@ SEQUENCES = {
         "services": ["postgres", "dagster", "grafana"],
         "curriculum": "01_warehouse_stack.md",
         "endpoints": [
-            {"name": "Grafana", "url": "http://localhost:3000", "note": "admin / see .env"},
+            {"name": "Grafana", "url": "http://localhost:3001", "note": "admin / see .env"},
             {"name": "Dagster", "url": "http://localhost:3010"},
             {"name": "Postgres", "url": "localhost:5432", "note": "see .env"},
         ],
@@ -25,18 +25,18 @@ SEQUENCES = {
         "services": ["postgres", "grafana"],
         "curriculum": "03_dbt_test.md",
         "endpoints": [
-            {"name": "Grafana", "url": "http://localhost:3000"},
+            {"name": "Grafana", "url": "http://localhost:3001"},
             {"name": "Postgres", "url": "localhost:5432"},
         ],
     },
-    "devops_stack": {
-        "title": "DevOps & DataOps",
+    "dataops_stack": {
+        "title": "DataOps",
         "level": "Intermediate",
         "services": ["postgres", "localstack", "terraform", "atlas", "grafana"],
-        "curriculum": "04_devops_stack.md",
+        "curriculum": "04_dataops_stack.md",
         "endpoints": [
             {"name": "LocalStack", "url": "http://localhost:4566", "note": "AWS emulation"},
-            {"name": "Grafana", "url": "http://localhost:3000"},
+            {"name": "Grafana", "url": "http://localhost:3001"},
             {"name": "Postgres", "url": "localhost:5432"},
         ],
     },
@@ -66,7 +66,7 @@ SEQUENCES = {
         "services": ["postgres", "dagster", "grafana", "mage"],
         "curriculum": "07_full_stack.md",
         "endpoints": [
-            {"name": "Grafana", "url": "http://localhost:3000"},
+            {"name": "Grafana", "url": "http://localhost:3001"},
             {"name": "Dagster", "url": "http://localhost:3010"},
             {"name": "Mage", "url": "http://localhost:6789"},
             {"name": "Postgres", "url": "localhost:5432"},

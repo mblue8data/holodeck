@@ -1,8 +1,8 @@
-# Curriculum: DevOps & DataOps
+# Curriculum: DataOps
 
-**Sequence:** `devops_stack`
+**Sequence:** `dataops_stack`
 **Level:** Intermediate
-**Stack:** Postgres · LocalStack · Terraform · Atlas
+**Stack:** Postgres · LocalStack · Terraform · Atlas · Grafana
 
 ## What You Will Learn
 - Infrastructure as Code (IaC) with Terraform against a local AWS environment
@@ -16,7 +16,7 @@
 
 ## Start the Stack
 ```bash
-./holo --load devops_stack
+./holo --load dataops_stack
 ```
 
 ---
@@ -60,8 +60,9 @@ terraform apply
 
 **Exercise 1.4 — Verify with the AWS CLI against LocalStack**
 ```bash
-# Still inside the terraform container
-aws --endpoint-url=http://localstack:4566 s3 ls
+# Run from your host — uses the localstack container's built-in awslocal
+# (awslocal = aws with --endpoint-url and fake credentials preset)
+docker exec -it localstack awslocal s3 ls
 ```
 
 You should see your three buckets: `holodeck-raw`, `holodeck-staging`, `holodeck-marts`.
@@ -84,7 +85,10 @@ resource "aws_s3_bucket" "archive" {
 ```bash
 terraform plan   # should show 1 resource to add, 0 to change, 0 to destroy
 terraform apply
-aws --endpoint-url=http://localstack:4566 s3 ls
+```
+Then, from your host:
+```bash
+docker exec -it localstack awslocal s3 ls
 ```
 
 **Exercise 2.2 — Understand state**
@@ -215,7 +219,7 @@ atlas schema apply --env local
 **Step 3 — Verify the full chain**
 ```bash
 # S3 prefix exists
-aws --endpoint-url=http://localstack:4566 s3 ls s3://holodeck-raw/
+docker exec -it localstack awslocal s3 ls s3://holodeck-raw/
 
 # Schema column exists
 docker exec -it holodeck-postgres-1 psql -U user -d mydb -c "\d raw.transactions"
