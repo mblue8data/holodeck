@@ -39,14 +39,14 @@ console = Console()
 
 
 SEQUENCES = {
-    "warehouse_stack": ["postgres", "dagster", "grafana"],
-    "data_modeling":   ["postgres", "dbt-postgres"],
-    "dbt_test":        ["postgres", "grafana"],
-    "full_stack":      ["postgres", "dagster", "grafana", "mage"],
-    "basic_ml_stack":  ["mlflow", "dagster"],
-    "duckdb_lab":      ["ducklake", "duckdb", "marimo"],
-    "dataops_stack":   ["postgres", "localstack", "terraform", "atlas", "grafana"],
-    "datalake_stack":  ["minio", "duckdb-lake", "marimo"],
+    "warehouse_stack":        ["postgres", "dagster", "grafana"],
+    "data_modeling":          ["postgres", "dbt-postgres"],
+    "dataops_quality_stack":  ["postgres", "dbt-postgres", "soda", "grafana"],
+    "dataops_infra_stack":    ["postgres", "localstack", "terraform", "atlas", "grafana"],
+    "full_stack":             ["postgres", "dagster", "grafana", "mage"],
+    "basic_ml_stack":         ["mlflow", "dagster"],
+    "duckdb_lab":             ["ducklake", "duckdb", "marimo"],
+    "datalake_stack":         ["minio", "duckdb-lake", "marimo"],
 }
 
 

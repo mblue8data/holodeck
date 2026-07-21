@@ -423,4 +423,4 @@ Before moving on, you should be able to:
 
 ## Next Steps
 - **`full_stack`** — feed gold-layer Iceberg tables into Grafana dashboards
-- **`dataops_stack`** — use Terraform to provision MinIO buckets as code
+- **`dataops_infra_stack`** — use Terraform to provision MinIO buckets as code

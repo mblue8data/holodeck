@@ -19,21 +19,21 @@ SEQUENCES = {
             {"name": "Postgres", "url": "localhost:5432", "note": "see .env"},
         ],
     },
-    "dbt_test": {
-        "title": "dbt Test",
-        "level": "Beginner",
-        "services": ["postgres", "grafana"],
-        "curriculum": "03_dbt_test.md",
+    "dataops_quality_stack": {
+        "title": "DataOps — Quality & Observability",
+        "level": "Intermediate",
+        "services": ["postgres", "dbt-postgres", "soda", "grafana"],
+        "curriculum": "03_dataops_quality_stack.md",
         "endpoints": [
-            {"name": "Grafana", "url": "http://localhost:3001"},
+            {"name": "Grafana", "url": "http://localhost:3001", "note": "data quality dashboards"},
             {"name": "Postgres", "url": "localhost:5432"},
         ],
     },
-    "dataops_stack": {
-        "title": "DataOps",
+    "dataops_infra_stack": {
+        "title": "DataOps — Infrastructure & Schema",
         "level": "Intermediate",
         "services": ["postgres", "localstack", "terraform", "atlas", "grafana"],
-        "curriculum": "04_dataops_stack.md",
+        "curriculum": "04_dataops_infra_stack.md",
         "endpoints": [
             {"name": "LocalStack", "url": "http://localhost:4566", "note": "AWS emulation"},
             {"name": "Grafana", "url": "http://localhost:3001"},

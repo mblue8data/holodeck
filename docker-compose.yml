@@ -153,6 +153,16 @@ services:
     depends_on:
       - postgres
 
+  soda:
+    build: ./docker/soda
+    container_name: soda
+    env_file: .env
+    working_dir: /soda
+    volumes:
+      - ./soda:/soda
+    depends_on:
+      - postgres
+
   minio:
     build: ./docker/minio
     container_name: minio

@@ -266,8 +266,8 @@ You have worked through the complete Holodeck curriculum:
 |----------|-------|
 | `warehouse_stack` | SQL, schema layers, orchestration basics, dashboards |
 | `data_modeling` | dbt — sources, staging, marts, tests, docs |
-| `dbt_test` | Data quality validation and reconciliation |
-| `dataops_stack` | Terraform IaC, Atlas schema migrations, DataOps workflow |
+| `dataops_quality_stack` | dbt tests, Soda checks, and Grafana quality dashboards |
+| `dataops_infra_stack` | Terraform IaC and Atlas schema migrations |
 | `duckdb_lab` | Analytical SQL, parquet, reactive notebooks |
 | `basic_ml_stack` | Experiment tracking, model registry, ML orchestration |
 | `full_stack` | End-to-end pipeline design and delivery |

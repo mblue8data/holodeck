@@ -214,4 +214,4 @@ Before moving on, you should be able to:
 
 ## Next Steps
 - **`data_modeling`** — automate your staging and mart models with dbt
-- **`dataops_stack`** — manage schema changes with Atlas
+- **`dataops_infra_stack`** — manage schema changes with Atlas
