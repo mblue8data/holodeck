@@ -45,7 +45,7 @@ SEQUENCES = {
     "full_stack":      ["postgres", "dagster", "grafana", "mage"],
     "basic_ml_stack":  ["mlflow", "dagster"],
     "duckdb_lab":      ["ducklake", "duckdb", "marimo"],
-    "devops_stack":    ["postgres", "localstack", "terraform", "atlas"],
+    "devops_stack":    ["postgres", "localstack", "terraform", "atlas", "grafana"],
     "datalake_stack":  ["minio", "duckdb-lake", "marimo"],
 }
 
@@ -222,25 +222,32 @@ def status(sequence):
     print(f"Status for sequence: {sequence}")
 
     if ensure_docker_ready():
-        # Get running containers info
-        ps_output = subprocess.check_output([
-            "docker", "ps", "--format", "{{json .}}"
-        ]).decode().splitlines()
-
-        containers = [json.loads(line) for line in ps_output]
-
         for svc in SEQUENCES[sequence]:
-            matched = [c for c in containers if svc in c["Names"]]
+            ps_all_output = subprocess.check_output([
+                "docker", "ps", "-a",
+                "--filter", f"label=com.docker.compose.service={svc}",
+                "--format", "{{json .}}"
+            ]).decode().splitlines()
+
+            matched = [json.loads(line) for line in ps_all_output if line.strip()]
 
             if matched:
                 c = matched[0]
-                status_icon = "🟢 Running"
+                state = c.get("State", "")
+                if state == "running":
+                    status_icon = "🟢 Running"
+                elif state == "exited" and c.get("Status", "").startswith("Exited (0)"):
+                    status_icon = "✅ Completed"
+                elif state == "exited":
+                    status_icon = "🔴 Exited (error)"
+                else:
+                    status_icon = f"🟡 {state.capitalize()}"
                 ports = c.get("Ports", "")
             else:
-                status_icon = "🔴 Not running"
+                status_icon = "⚫ Not started"
                 ports = ""
 
-            print(f"  {svc.ljust(15)} {status_icon.ljust(15)} {ports}")
+            print(f"  {svc.ljust(15)} {status_icon.ljust(20)} {ports}")
 
 def status_all():
     console.print("[bold cyan]Holodeck System Status (all containers):[/bold cyan]\n")
@@ -394,6 +401,8 @@ if __name__ == "__main__":
 
     if args.load:
         load_sequence(args.load)
+        time.sleep(5)
+        status(args.load)
         if args.load == "duckdb_lab":
             console.print("[cyan]Marimo UI:[/cyan] http://localhost:8888  |  [cyan]Ducklake data server:[/cyan] http://localhost:9000")
         if "grafana" in SEQUENCES.get(args.load, []):
