@@ -29,6 +29,8 @@ def _ensure_local_venv_site_packages():
 _ensure_local_venv_site_packages()
 
 from rich.console import Console
+from rich.table import Table
+from rich import box
 
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 from tools.ascii import ascii_maker
@@ -37,14 +39,14 @@ console = Console()
 
 
 SEQUENCES = {
-    "warehouse_stack": ["postgres", "dagster", "grafana"],
-    "data_modeling":   ["postgres", "dbt-postgres"],
-    "dbt_test":        ["postgres", "grafana"],
-    "full_stack":      ["postgres", "dagster", "grafana", "mage"],
-    "basic_ml_stack":  ["mlflow", "dagster"],
-    "duckdb_lab":      ["ducklake", "duckdb", "marimo"],
-    "devops_stack":    ["postgres", "localstack", "terraform", "atlas"],
-    "datalake_stack":  ["minio", "duckdb-lake", "marimo"],
+    "warehouse_stack":        ["postgres", "dagster", "grafana"],
+    "data_modeling":          ["postgres", "dbt-postgres"],
+    "dataops_quality_stack":  ["postgres", "dbt-postgres", "soda", "grafana"],
+    "dataops_infra_stack":    ["postgres", "localstack", "terraform", "atlas", "grafana"],
+    "full_stack":             ["postgres", "dagster", "grafana", "mage"],
+    "basic_ml_stack":         ["mlflow", "dagster"],
+    "duckdb_lab":             ["ducklake", "duckdb", "marimo"],
+    "datalake_stack":         ["minio", "duckdb-lake", "marimo"],
 }
 
 
@@ -155,7 +157,7 @@ def get_compose_cmd():
 
 def seed_duckdb_lab_data():
     """Ensure duckdb_lab has seed data; generate via bluefaker if missing."""
-    repo_root = Path(__file__).resolve().parent.parent
+    repo_root = Path(__file__).resolve().parent
     raw_dir = repo_root / "data" / "raw"
     raw_dir.mkdir(parents=True, exist_ok=True)
 
@@ -220,25 +222,32 @@ def status(sequence):
     print(f"Status for sequence: {sequence}")
 
     if ensure_docker_ready():
-        # Get running containers info
-        ps_output = subprocess.check_output([
-            "docker", "ps", "--format", "{{json .}}"
-        ]).decode().splitlines()
-
-        containers = [json.loads(line) for line in ps_output]
-
         for svc in SEQUENCES[sequence]:
-            matched = [c for c in containers if svc in c["Names"]]
+            ps_all_output = subprocess.check_output([
+                "docker", "ps", "-a",
+                "--filter", f"label=com.docker.compose.service={svc}",
+                "--format", "{{json .}}"
+            ]).decode().splitlines()
+
+            matched = [json.loads(line) for line in ps_all_output if line.strip()]
 
             if matched:
                 c = matched[0]
-                status_icon = "🟢 Running"
+                state = c.get("State", "")
+                if state == "running":
+                    status_icon = "🟢 Running"
+                elif state == "exited" and c.get("Status", "").startswith("Exited (0)"):
+                    status_icon = "✅ Completed"
+                elif state == "exited":
+                    status_icon = "🔴 Exited (error)"
+                else:
+                    status_icon = f"🟡 {state.capitalize()}"
                 ports = c.get("Ports", "")
             else:
-                status_icon = "🔴 Not running"
+                status_icon = "⚫ Not started"
                 ports = ""
 
-            print(f"  {svc.ljust(15)} {status_icon.ljust(15)} {ports}")
+            print(f"  {svc.ljust(15)} {status_icon.ljust(20)} {ports}")
 
 def status_all():
     console.print("[bold cyan]Holodeck System Status (all containers):[/bold cyan]\n")
@@ -276,7 +285,7 @@ def test_sequence(sequence):
 
     if "grafana" in SEQUENCES[sequence]:
         try:
-            r = subprocess.check_output(["curl", "-s", "http://localhost:3000/api/health"])
+            r = subprocess.check_output(["curl", "-s", "http://localhost:3001/api/health"])
             print(f"  Grafana: {r.strip().decode()}")
         except:
             print("  Grafana not responding")
@@ -291,6 +300,34 @@ def test_sequence(sequence):
     if "dagster" in SEQUENCES[sequence]:
         print("  Dagster: Checking workspace")
         subprocess.run(["curl", "-s", "http://localhost:3010/graphql?query={__typename}"])
+
+
+def ensure_holo_docs():
+    """Ensure the holo-docs web UI container is running (always-on service)."""
+    compose_cmd = get_compose_cmd()
+    if not compose_cmd:
+        return
+    subprocess.run(
+        compose_cmd + ["up", "-d", "holo-docs"],
+        capture_output=True,
+        text=True,
+    )
+
+
+def open_curriculum(sequence_name):
+    """Print the curriculum URL and open it in the default browser."""
+    url = f"http://localhost:7777/stack/{sequence_name}"
+    console.print(f"[cyan]Curriculum:[/cyan] {url}")
+    opener = None
+    if sys.platform == "darwin" and shutil.which("open"):
+        opener = ["open", url]
+    elif sys.platform.startswith("linux") and shutil.which("xdg-open"):
+        opener = ["xdg-open", url]
+    if opener:
+        try:
+            subprocess.Popen(opener, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+        except Exception:
+            pass
 
 
 def run_docker_services(services):
@@ -331,9 +368,21 @@ def load_sequence(sequence_name):
     run_docker_services(SEQUENCES[sequence_name])
 
 def list_sequences():
-    print("Available sequences:")
+    table = Table(
+        title="[bold cyan]Available Sequences[/bold cyan]",
+        box=box.ROUNDED,
+        show_lines=True,
+        header_style="bold magenta",
+    )
+    table.add_column("Sequence", style="bold green", no_wrap=True)
+    table.add_column("Services", style="cyan")
+
     for name, services in SEQUENCES.items():
-        print(f"  {name}: {' '.join(services)}")
+        table.add_row(name, "  ".join(f"[dim]▸[/dim] {s}" for s in services))
+
+    console.print()
+    console.print(table)
+    console.print()
 
 class HolodeckParser(ArgumentParser):
     def error(self, message):
@@ -352,6 +401,7 @@ if __name__ == "__main__":
     parser.add_argument("--status", nargs="?", help="Show running container status")
     parser.add_argument("--test", help="Run smoke tests for a sequence")
     parser.add_argument("--list", action="store_true", help="List available sequences")
+    parser.add_argument("--no-browser", action="store_true", help="Do not auto-open the curriculum web UI")
 
     args = parser.parse_args()
     
@@ -380,14 +430,21 @@ if __name__ == "__main__":
 
     if args.load:
         load_sequence(args.load)
+        time.sleep(5)
+        status(args.load)
+        ensure_holo_docs()
         if args.load == "duckdb_lab":
             console.print("[cyan]Marimo UI:[/cyan] http://localhost:8888  |  [cyan]Ducklake data server:[/cyan] http://localhost:9000")
         if "grafana" in SEQUENCES.get(args.load, []):
-            console.print("[cyan]Grafana:[/cyan] http://localhost:3000  (admin / holodeck)")
+            console.print("[cyan]Grafana:[/cyan] http://localhost:3001  (admin / holodeck)")
         if "minio" in SEQUENCES.get(args.load, []):
             console.print("[cyan]MinIO Console:[/cyan] http://localhost:9002  (see .env for credentials)")
             console.print("[cyan]MinIO S3 API:[/cyan]  http://localhost:9001")
             console.print("[dim]First run: open the console and create buckets: bronze, silver, gold[/dim]")
+        if not args.no_browser:
+            open_curriculum(args.load)
+        else:
+            console.print(f"[cyan]Curriculum:[/cyan] http://localhost:7777/stack/{args.load}")
 
     elif args.status in SEQUENCES:
         status(args.status)

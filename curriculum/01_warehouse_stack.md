@@ -158,7 +158,7 @@ Restart Dagster and verify the new asset appears in the UI:
 
 ## Module 4 — Grafana Dashboards
 
-Open Grafana at **http://localhost:3000** (admin / see `.env`)
+Open Grafana at **http://localhost:3001** (admin / see `.env`)
 
 The Postgres datasource is already connected — no setup needed.
 
@@ -214,4 +214,4 @@ Before moving on, you should be able to:
 
 ## Next Steps
 - **`data_modeling`** — automate your staging and mart models with dbt
-- **`devops_stack`** — manage schema changes with Atlas
+- **`dataops_infra_stack`** — manage schema changes with Atlas

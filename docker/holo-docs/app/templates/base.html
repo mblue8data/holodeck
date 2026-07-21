@@ -1,0 +1,52 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{% block title %}Holodeck Docs{% endblock %}</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/static/app.css">
+</head>
+<body>
+  <aside class="sidebar">
+    <a class="brand" href="/">
+      <span class="brand-mark">▸</span>
+      <span class="brand-text">HOLODECK</span>
+    </a>
+    <nav class="stack-list">
+      {% for key, s in stacks.items() %}
+        <a class="stack-link {% if name == key %}active{% endif %}" href="/stack/{{ key }}">
+          <span class="dot {% if running == key %}live{% endif %}"
+                title="{% if running == key %}Running{% else %}Not running{% endif %}"></span>
+          <div class="stack-meta">
+            <div class="stack-name">{{ s.title }}</div>
+            <div class="stack-level">{{ s.level }}</div>
+          </div>
+        </a>
+      {% endfor %}
+    </nav>
+    <div class="sidebar-foot">
+      <div class="foot-line">Docs on <code>:7777</code></div>
+    </div>
+  </aside>
+  <main class="main">
+    {% block content %}{% endblock %}
+  </main>
+  <script>
+    async function pollStatus() {
+      try {
+        const r = await fetch('/api/status');
+        const d = await r.json();
+        document.querySelectorAll('.stack-link .dot').forEach(el => el.classList.remove('live'));
+        if (d.running) {
+          const active = document.querySelector(`.stack-link[href="/stack/${d.running}"] .dot`);
+          if (active) active.classList.add('live');
+        }
+      } catch (_) {}
+    }
+    setInterval(pollStatus, 5000);
+  </script>
+</body>
+</html>

@@ -276,5 +276,5 @@ Before moving on, you should be able to:
 - [ ] Read the dbt DAG in the docs UI
 
 ## Next Steps
-- **`dbt_test`** — validate dbt output visually in Grafana
-- **`devops_stack`** — manage the underlying schema changes with Atlas
+- **`dataops_quality_stack`** — validate models with dbt tests, Soda checks, and Grafana dashboards
+- **`dataops_infra_stack`** — manage the underlying schema changes with Atlas

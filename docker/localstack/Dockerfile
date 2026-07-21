@@ -1,1 +1,1 @@
-FROM localstack/localstack:latest
+FROM localstack/localstack:3

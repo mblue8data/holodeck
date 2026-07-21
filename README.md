@@ -71,7 +71,7 @@ pipelines, and Grafana provides dashboards connected directly to Postgres.
 
 | Service | URL | Credentials |
 |---------|-----|-------------|
-| Grafana | http://localhost:3000 | admin / *(see .env)* |
+| Grafana | http://localhost:3001 | admin / *(see .env)* |
 | Dagster | http://localhost:3010 | — |
 | Postgres | localhost:5432 | *(see .env)* |
 
@@ -108,17 +108,26 @@ docker exec -it holodeck-dbt-postgres-1 dbt docs generate
 
 ---
 
-### `dbt_test`
-**Services:** Postgres · Grafana
+### `dataops_quality_stack`
+**Services:** Postgres · dbt-postgres · Soda · Grafana
 
-Lightweight stack for testing dbt output in Grafana without running the full warehouse stack.
+The **quality and observability half of DataOps**. Practice dbt tests, Soda checks
+against raw data, and Grafana dashboards for data-quality signals. Designed to run
+alongside `dataops_infra_stack` for the full DataOps loop.
+
+**Run a Soda scan:**
+```bash
+docker exec -it soda soda scan -d holodeck -c /soda/configuration.yml /soda/checks.yml
+```
 
 ---
 
-### `devops_stack`
-**Services:** Postgres · LocalStack · Terraform · Atlas
+### `dataops_infra_stack`
+**Services:** Postgres · LocalStack · Terraform · Atlas · Grafana
 
-Practice DevOps and DataOps workflows entirely locally — no cloud account required.
+The **infrastructure and schema half of DataOps**. Practice the DataOps loop —
+infrastructure changes and schema changes shipped as version-controlled code,
+entirely locally with no cloud account required.
 
 | Service | URL | Purpose |
 |---------|-----|---------|
@@ -214,7 +223,7 @@ Everything in `warehouse_stack` plus Mage for additional pipeline authoring.
 
 | Service | URL |
 |---------|-----|
-| Grafana | http://localhost:3000 |
+| Grafana | http://localhost:3001 |
 | Dagster | http://localhost:3010 |
 | Mage | http://localhost:6789 |
 
@@ -284,8 +293,8 @@ Work through them in order — each one builds on the last.
 |---|----------|-------|------------|
 | 1 | `warehouse_stack` | Beginner | [01_warehouse_stack.md](curriculum/01_warehouse_stack.md) |
 | 2 | `data_modeling` | Intermediate | [02_data_modeling.md](curriculum/02_data_modeling.md) |
-| 3 | `dbt_test` | Beginner | [03_dbt_test.md](curriculum/03_dbt_test.md) |
-| 4 | `devops_stack` | Intermediate | [04_devops_stack.md](curriculum/04_devops_stack.md) |
+| 3 | `dataops_quality_stack` | Intermediate | [03_dataops_quality_stack.md](curriculum/03_dataops_quality_stack.md) |
+| 4 | `dataops_infra_stack` | Intermediate | [04_dataops_infra_stack.md](curriculum/04_dataops_infra_stack.md) |
 | 5 | `duckdb_lab` | Beginner–Intermediate | [05_duckdb_lab.md](curriculum/05_duckdb_lab.md) |
 | 6 | `basic_ml_stack` | Intermediate | [06_basic_ml_stack.md](curriculum/06_basic_ml_stack.md) |
 | 7 | `full_stack` | Advanced | [07_full_stack.md](curriculum/07_full_stack.md) |

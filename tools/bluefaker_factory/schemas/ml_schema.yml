@@ -1,0 +1,36 @@
+schema:
+  - column: ID
+    dtype: uuid4
+  - column: Name
+    dtype: name
+  - column: Email
+    dtype: email
+  - column: Gender
+    dtype: gender
+  - column: Age
+    dtype: age
+  - column: Country
+    dtype: country
+  - column: State
+    dtype: state
+  - column: Signup_Date
+    dtype: date
+  - column: Device
+    dtype: user_agent
+  - column: Num_Sessions
+    dtype: num_sessions
+  - column: Avg_Session_Duration_Min
+    dtype: avg_session_duration_min
+  - column: Pages_Visited
+    dtype: pages_visited
+  - column: Subscription_Level
+    dtype: subscription_level
+  - column: Churned
+    dtype: pybool
+  - column: Credit_Score
+    dtype: credit_score
+  - column: Annual_Income
+    dtype: annual_income
+  - column: Last_Purchase_Amount
+    dtype: last_purchase_amount
+

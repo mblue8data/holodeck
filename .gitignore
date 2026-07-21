@@ -16,6 +16,11 @@ dagster/history/
 dagster/schedules/
 mage_data/
 
+# dbt runtime artifacts
+data_modeling/dbt/.user.yml
+data_modeling/dbt/logs/
+data_modeling/dbt/target/
+
 # Terraform state
 devops/terraform/.terraform/
 devops/terraform/*.tfstate

@@ -1,0 +1,16 @@
+checks for customers:
+  - row_count > 0
+  - missing_count(email) = 0
+  - duplicate_count(email) = 0
+  - invalid_count(email) = 0:
+      valid format: email
+  - missing_count(name) = 0
+
+checks for transactions:
+  - row_count > 0
+  - missing_count(amount) = 0
+  - min(amount) >= 0
+  - invalid_count(status) = 0:
+      valid values: [completed, pending, failed]
+  - invalid_count(currency) = 0:
+      valid values: [USD, EUR, GBP, JPY, KRW, CAD, AUD]
