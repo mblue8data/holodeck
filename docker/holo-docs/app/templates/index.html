@@ -1,0 +1,21 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="empty-state">
+  <h1>Holodeck Docs</h1>
+  <p class="lede">
+    Pick a sequence on the left to read its curriculum. When you run
+    <code>./holo --load &lt;stack&gt;</code>, this page auto-jumps to the running stack.
+  </p>
+  <div class="empty-grid">
+    {% for key, s in stacks.items() %}
+      <a class="empty-card" href="/stack/{{ key }}">
+        <div class="empty-card-title">{{ s.title }}</div>
+        <div class="empty-card-level">{{ s.level }}</div>
+        <div class="empty-card-services">
+          {% for svc in s.services %}<span class="chip small">{{ svc }}</span>{% endfor %}
+        </div>
+      </a>
+    {% endfor %}
+  </div>
+</div>
+{% endblock %}

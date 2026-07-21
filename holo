@@ -302,6 +302,34 @@ def test_sequence(sequence):
         subprocess.run(["curl", "-s", "http://localhost:3010/graphql?query={__typename}"])
 
 
+def ensure_holo_docs():
+    """Ensure the holo-docs web UI container is running (always-on service)."""
+    compose_cmd = get_compose_cmd()
+    if not compose_cmd:
+        return
+    subprocess.run(
+        compose_cmd + ["up", "-d", "holo-docs"],
+        capture_output=True,
+        text=True,
+    )
+
+
+def open_curriculum(sequence_name):
+    """Print the curriculum URL and open it in the default browser."""
+    url = f"http://localhost:7777/stack/{sequence_name}"
+    console.print(f"[cyan]Curriculum:[/cyan] {url}")
+    opener = None
+    if sys.platform == "darwin" and shutil.which("open"):
+        opener = ["open", url]
+    elif sys.platform.startswith("linux") and shutil.which("xdg-open"):
+        opener = ["xdg-open", url]
+    if opener:
+        try:
+            subprocess.Popen(opener, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+        except Exception:
+            pass
+
+
 def run_docker_services(services):
     try:
         if not ensure_docker_ready():
@@ -373,6 +401,7 @@ if __name__ == "__main__":
     parser.add_argument("--status", nargs="?", help="Show running container status")
     parser.add_argument("--test", help="Run smoke tests for a sequence")
     parser.add_argument("--list", action="store_true", help="List available sequences")
+    parser.add_argument("--no-browser", action="store_true", help="Do not auto-open the curriculum web UI")
 
     args = parser.parse_args()
     
@@ -403,6 +432,7 @@ if __name__ == "__main__":
         load_sequence(args.load)
         time.sleep(5)
         status(args.load)
+        ensure_holo_docs()
         if args.load == "duckdb_lab":
             console.print("[cyan]Marimo UI:[/cyan] http://localhost:8888  |  [cyan]Ducklake data server:[/cyan] http://localhost:9000")
         if "grafana" in SEQUENCES.get(args.load, []):
@@ -411,6 +441,10 @@ if __name__ == "__main__":
             console.print("[cyan]MinIO Console:[/cyan] http://localhost:9002  (see .env for credentials)")
             console.print("[cyan]MinIO S3 API:[/cyan]  http://localhost:9001")
             console.print("[dim]First run: open the console and create buckets: bronze, silver, gold[/dim]")
+        if not args.no_browser:
+            open_curriculum(args.load)
+        else:
+            console.print(f"[cyan]Curriculum:[/cyan] http://localhost:7777/stack/{args.load}")
 
     elif args.status in SEQUENCES:
         status(args.status)

@@ -1,0 +1,44 @@
+{% extends "base.html" %}
+{% block title %}{{ cfg.title }} — Holodeck Docs{% endblock %}
+{% block content %}
+<header class="stack-header">
+  <div class="stack-title-row">
+    <h1>{{ cfg.title }}</h1>
+    <span class="badge badge-level">{{ cfg.level }}</span>
+    {% if running == name %}
+      <span class="badge badge-live"><span class="dot live inline"></span>Running</span>
+    {% else %}
+      <span class="badge badge-idle">Not running</span>
+    {% endif %}
+  </div>
+
+  <div class="services-row">
+    {% for svc in cfg.services %}<span class="chip">{{ svc }}</span>{% endfor %}
+  </div>
+
+  {% if cfg.endpoints %}
+  <div class="endpoints-row">
+    {% for ep in cfg.endpoints %}
+      {% if ep.url.startswith('http') %}
+        <a class="endpoint" href="{{ ep.url }}" target="_blank" rel="noopener">
+      {% else %}
+        <span class="endpoint">
+      {% endif %}
+        <span class="endpoint-name">{{ ep.name }}</span>
+        <span class="endpoint-url">{{ ep.url }}</span>
+        {% if ep.note %}<span class="endpoint-note">{{ ep.note }}</span>{% endif %}
+      {% if ep.url.startswith('http') %}</a>{% else %}</span>{% endif %}
+    {% endfor %}
+  </div>
+  {% endif %}
+
+  <div class="cmd-hint">
+    <span class="cmd-label">Start:</span>
+    <code>./holo --load {{ name }}</code>
+  </div>
+</header>
+
+<article class="curriculum">
+  {{ content | safe }}
+</article>
+{% endblock %}
