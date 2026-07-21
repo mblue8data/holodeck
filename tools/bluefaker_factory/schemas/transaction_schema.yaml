@@ -1,0 +1,34 @@
+ischema:
+  - column: Transaction_ID
+    dtype: uuid4
+  - column: User_ID
+    dtype: uuid4
+  - column: Name
+    dtype: name
+  - column: Email
+    dtype: email
+  - column: Product_ID
+    dtype: uuid4
+  - column: Product_Name
+    dtype: word
+  - column: Category
+    dtype: random_element
+    options: ["Electronics", "Clothing", "Books", "Home", "Toys", "Groceries"]
+  - column: Quantity
+    dtype: random_int
+  - column: Price
+    dtype: pyfloat
+  - column: Total_Amount
+    dtype: pyfloat
+  - column: Transaction_Date
+    dtype: date
+  - column: Payment_Method
+    dtype: random_element
+    options: ["Credit Card", "PayPal", "Gift Card", "Crypto", "Bank Transfer"]
+  - column: Shipping_Address
+    dtype: street_address
+  - column: Shipping_City
+    dtype: city
+  - column: Shipping_Country
+    dtype: country
+

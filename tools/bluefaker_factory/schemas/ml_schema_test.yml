@@ -1,0 +1,45 @@
+schema:
+  - column: ID
+    dtype: uuid4
+
+  # Demographics
+  - column: Name
+    dtype: name
+  - column: Email
+    dtype: email
+  - column: Gender
+    dtype: random_element
+  - column: Age
+    dtype: random_int
+  - column: Country
+    dtype: country
+  - column: State
+    dtype: state
+  - column: Signup_Date
+    dtype: date
+
+  # User Behavior
+  - column: Device
+    dtype: user_agent
+  - column: Num_Sessions
+    dtype: random_int
+  - column: Avg_Session_Duration_Min
+    dtype: pyfloat
+  - column: Pages_Visited
+    dtype: random_int
+  - column: Subscription_Level
+    dtype: random_element
+  - column: Churned
+    dtype: pybool  # 🏷️ our binary classification label
+
+  # Financials
+  - column: Credit_Score
+    dtype: random_int
+  - column: Annual_Income
+    dtype: pyint
+  - column: Last_Purchase_Amount
+    dtype: pyfloat
+
+
+
+

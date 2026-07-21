@@ -1,0 +1,11 @@
+schema:
+  - column: Email_Id
+    dtype: email
+  - column: Name
+    dtype: name
+  - column: Gamer_Id
+    dtype: user_name
+  - column: Device
+    dtype: user_agent
+  - column: Phone_Number
+    dtype: phone_number

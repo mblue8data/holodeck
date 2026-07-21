@@ -1,0 +1,29 @@
+schema:
+  - column: Ticket_ID
+    dtype: uuid4
+  - column: User_ID
+    dtype: uuid4
+  - column: Name
+    dtype: name
+  - column: Email
+    dtype: email
+  - column: Issue_Category
+    dtype: random_element
+    options: ["Billing", "Technical", "Account Access", "Cancellation", "Feedback"]
+  - column: Priority
+    dtype: random_element
+    options: ["Low", "Medium", "High", "Urgent"]
+  - column: Status
+    dtype: random_element
+    options: ["Open", "In Progress", "Resolved", "Closed"]
+  - column: Created_At
+    dtype: date
+  - column: Updated_At
+    dtype: date
+  - column: Assigned_Agent
+    dtype: name
+  - column: Resolution_Time_Min
+    dtype: random_int
+  - column: Escalated
+    dtype: boolean
+
